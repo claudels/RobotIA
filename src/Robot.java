@@ -10,6 +10,7 @@ public class Robot {
 	private ArrayList<RobotListener> listeners;
 	
 	public Robot(int id, double vMoy) {
+		this.id = id;
 		this.vMoy = vMoy;
 		this.listeners = new ArrayList<RobotListener>();
 	}
@@ -37,6 +38,7 @@ public class Robot {
 	
 	public void setAffectedZone(Zone newZone) {
 		this.affectedZone = newZone;
+		this.addRobotListener(newZone);
 		this.listeners.forEach(robotListener -> robotListener.zoneChanged(this));
 	}
 	
