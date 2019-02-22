@@ -21,4 +21,8 @@ public class Zone implements RobotListener{
 	public double getVmoySum(){
 		return this.robots.stream().mapToDouble(robot -> robot.getVMoy()).sum();
 	}
+	
+	public double getMoyenneVitesses(){
+		return this.getVmoySum() / (double)(this.robots.size());
+	}
 }

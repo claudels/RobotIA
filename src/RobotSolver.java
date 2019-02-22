@@ -7,11 +7,6 @@ import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.tensorflow.Graph;
-import org.tensorflow.Session;
-import org.tensorflow.Tensor;
-import org.tensorflow.TensorFlow;
-
 public class RobotSolver {
 	
 	private final static String CHEMIN_FICHIER_ROBOTS = "res/initial.csv";
@@ -28,8 +23,29 @@ public class RobotSolver {
 			zones[i] = new Zone(i);
 		}
 		
+		//Affection
+		
+		
 		//Affichage des robots
 		Logger.getGlobal().log(Level.INFO, robots.toString());
+	}
+	
+	public double calculateEcartTypeZones(Zone zones[]){
+		
+		double sum = 0.0, standardDeviation = 0.0;
+        int length = zones.length;
+		
+		for(Zone zone : zones){
+			sum += zone.getMoyenneVitesses();
+		}
+		
+		double mean = sum/length;
+		
+		for(Zone zone: zones) {
+            standardDeviation += Math.pow(zone.getMoyenneVitesses() - mean, 2);
+        }
+
+        return Math.sqrt(standardDeviation/length);
 	}
 	
 	public static LinkedList<Robot> chargementRobot(String cheminFichierCSV){
