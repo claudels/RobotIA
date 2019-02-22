@@ -25,4 +25,12 @@ public class Zone implements RobotListener{
 	public double getMoyenneVitesses(){
 		return this.getVmoySum() / (double)(this.robots.size());
 	}
+	
+	public int countRobots(){
+		return this.robots.size();
+	}
+	
+	public ArrayList<Robot> getRobots() {
+		return robots;
+	}
 }
