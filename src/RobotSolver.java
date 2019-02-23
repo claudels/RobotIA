@@ -1,7 +1,9 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -16,6 +18,8 @@ public class RobotSolver {
 	
 	private final static String CHEMIN_FICHIER_ROBOTS = "res/initial.csv";
 	private final static int NOMBRE_ZONES = 6;
+	private final static String SEPARATEUR_CSV_SORTIE = ";";
+	private final static String CHEMIN_FICHIER_SORTIE = "res/complet.csv";
 
 	public static void main(String[] args) {
 		//Table des robots avec id comme clé
@@ -25,7 +29,7 @@ public class RobotSolver {
 		
 		affectionSequentielle(robots);
 		affectationAleatoire(robots);
-		affectationPermutation(0.0001, 10, robots);
+		affectationPermutation(0.00001, 10, robots);
 		
 		
 		//Affichage des robots
@@ -69,16 +73,15 @@ public class RobotSolver {
 			zones.add(new Zone(i));
 		}
 		
-		/**
 		//Affection séquentielle
 		int curseur = 0;
 		
 		for(Robot robot : robots){
-			robot.setAffectedZone(zones[curseur]);
+			robot.setAffectedZone(zones.get(curseur));
 			curseur = (curseur == NOMBRE_ZONES-1) ? 0 : curseur + 1;
-		}*/
+		}
 		
-		Collections.sort(robots, Comparator.comparingDouble(Robot::getVMoy).reversed());
+		/**Collections.sort(robots, Comparator.comparingDouble(Robot::getVMoy).reversed());
 		int flag=1;
 		int curseur=0;
 		for(Robot robot : robots){
@@ -96,35 +99,76 @@ public class RobotSolver {
 			}
 			curseur-=1;
 		}
-		}
+		}*/
 		
 		long startTime = System.currentTimeMillis();
 		long permutationsCount = 0;
 		double ecartTypeAvantPermut = -1;
-		double toleranceGainEcart = 0.0000000001;
+		double toleranceGainEcart = 0.01;
+		double nombrePermutationAleatoire = 8;
+		double bestEcartType = 10;
+		int counterForcePermute = 0;
+		int nombreIterationAvantForcePermute = 10;
+		
 		Comparator <Zone> comparator = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
 		Random rand = new Random();
 		//Permutation
-		while(calculateEcartTypeZones(zones) > ecartTypeCible || ((double)(System.currentTimeMillis() - startTime)/(double)1000) > (double)tempsMaxSeconde){
+		while(calculateEcartTypeZones(zones) > ecartTypeCible && ((double)(System.currentTimeMillis() - startTime)/(double)1000) < (double)tempsMaxSeconde){
 			Zone zoneActuelle = zones.stream().min(comparator).get();
-			Zone zoneSuivante;
+			Zone zoneSuivante = zones.stream().max(comparator).get();
 			
-			if(ecartTypeAvantPermut - calculateEcartTypeZones(zones) > toleranceGainEcart){
-				zoneSuivante = zones.stream().max(comparator).get();
-			}else{
-				//zoneActuelle = zones.get(rand.nextInt(NOMBRE_ZONES));
+			counterForcePermute = (counterForcePermute == 0) ? 0 : counterForcePermute - 1;
+			
+			double pourcentageAmeliorationEcartType = 1 - (calculateEcartTypeZones(zones) / ecartTypeAvantPermut);
+			Logger.getGlobal().log(Level.INFO, "Pourcentage amélioriation : " + pourcentageAmeliorationEcartType);
+			
+			if(pourcentageAmeliorationEcartType < toleranceGainEcart && counterForcePermute == 0){
+				//Reinitialise le compteur avant qui temporise les iteration avant de repermuter
+				counterForcePermute = nombreIterationAvantForcePermute;
+				for(int i=0; i < nombrePermutationAleatoire; i++){
+					int indexZoneSource = rand.nextInt(NOMBRE_ZONES);
+					int indexZoneDest = indexZoneSource;
+					while(indexZoneDest == indexZoneSource){  indexZoneDest = rand.nextInt(NOMBRE_ZONES); }
+					
+					int indexRobotSource = rand.nextInt((robots.size() / zones.size()));
+					int indexRobotDest = indexRobotSource;
+					while(indexRobotDest == indexRobotSource){  indexRobotDest = rand.nextInt((robots.size() / zones.size())); }
+					
+					//Zone zoneSource = zones.get(indexZoneSource);
+					Zone zoneSource = zoneActuelle;
+					Zone zoneDest = zones.get(indexZoneDest);
+					
+					zoneSource.getRobots().get(indexRobotSource).setAffectedZone(zoneDest);
+					zoneDest.getRobots().get(indexRobotDest).setAffectedZone(zoneSource);
+					permutationsCount++;
+				}
+			}
+			else if(pourcentageAmeliorationEcartType < toleranceGainEcart && counterForcePermute > 0){
 				zoneSuivante = zones.get(rand.nextInt(NOMBRE_ZONES));
 			}
 			
 			
 			ecartTypeAvantPermut = calculateEcartTypeZones(zones);
-			ArrayList<Robot> robotsZoneActuelle = (ArrayList<Robot>) zoneActuelle.getRobots().clone();
 			
-			for(int i = 0; i < robotsZoneActuelle.size(); i++){
+			for(int i = 0; i < zoneActuelle.getRobots().size(); i++){
 				double ancienEcartType = calculateEcartTypeZones(zones);
-				ArrayList<Robot> robotsZoneSuivante = (ArrayList<Robot>) zoneSuivante.getRobots().clone();
 				
-				for(int j = 0; j < robotsZoneSuivante.size(); j++){
+				/*double bestTempEcartType = ancienEcartType;
+				final Robot bestRobotToSwitchId[] = new Robot[1];
+				bestRobotToSwitchId[0] = null;*/
+				
+				for(int j = 0; j < zoneSuivante.getRobots().size(); j++){
+					/*zoneActuelle.getRobots().get(i).setAffectedZone(zoneSuivante);
+					zoneSuivante.getRobots().get(j).setAffectedZone(zoneActuelle);
+					
+					double nouvelEcartType = calculateEcartTypeZones(zones);
+					if(nouvelEcartType < bestTempEcartType && nouvelEcartType < ancienEcartType){
+						bestEcartType = calculateEcartTypeZones(zones);
+						bestRobotToSwitchId[0] = zoneSuivante.getRobots().get(zoneSuivante.countRobots() - 2);
+					}
+					
+					zoneActuelle.getRobots().get(zoneActuelle.countRobots() - 1).setAffectedZone(zoneSuivante);
+					zoneSuivante.getRobots().get(zoneSuivante.countRobots() - 2).setAffectedZone(zoneActuelle);*/
 					zoneActuelle.getRobots().get(i).setAffectedZone(zoneSuivante);
 					zoneSuivante.getRobots().get(j).setAffectedZone(zoneActuelle);
 					
@@ -137,10 +181,23 @@ public class RobotSolver {
 						break;
 					}
 				}
+				
+				/*if(bestRobotToSwitchId[0] != null){
+					zoneActuelle.getRobots().get(i).setAffectedZone(zoneSuivante);
+					/*int indexRobot = zoneSuivante.getRobots().indexOf(bestRobotToSwitchId[0]);
+					zoneSuivante.getRobots().get(indexRobot).setAffectedZone(zoneActuelle);
+					bestRobotToSwitchId[0].setAffectedZone(zoneActuelle);
+					permutationsCount++;
+				}*/
+			}
+			
+			if(calculateEcartTypeZones(zones) < bestEcartType){
+				bestEcartType = calculateEcartTypeZones(zones);
+				enregistrerRobots(CHEMIN_FICHIER_SORTIE, zones);
 			}
 		}
 		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Affectation par permutation : " + calculateEcartTypeZones(zones)) + " Permutations : " + permutationsCount + " Temps passé : " + (double)(System.currentTimeMillis() - startTime)/(double)1000 + " secondes"); //Affichage ecart type
+		Logger.getGlobal().log(Level.INFO, String.valueOf("Affectation par permutation, dernier ecart : " + calculateEcartTypeZones(zones)) + " Meilleur ecart : " + bestEcartType + " Permutations : " + permutationsCount + " Temps passé : " + (double)(System.currentTimeMillis() - startTime)/(double)1000 + " secondes"); //Affichage ecart type
 
 	}
 	
@@ -231,6 +288,33 @@ public class RobotSolver {
         }
 		
 		return robots;
+	}
+	
+	public static void enregistrerRobots(String chemin, ArrayList<Zone> zones){
+		StringBuilder builder = new StringBuilder();
+		PrintWriter writer = null;
+		
+		try{
+			writer = new PrintWriter(new File(chemin));
+			
+			builder.append("ECART TYPE" + SEPARATEUR_CSV_SORTIE + calculateEcartTypeZones(zones) + SEPARATEUR_CSV_SORTIE + "\n");
+			builder.append("ID" + SEPARATEUR_CSV_SORTIE + "Vitesse" + SEPARATEUR_CSV_SORTIE + "Zone affectée" + SEPARATEUR_CSV_SORTIE + "\n");
+			
+			for (Zone zone : zones){
+				for (Robot robot : zone.getRobots()){
+					builder.append(robot.getId() + SEPARATEUR_CSV_SORTIE);
+					builder.append(robot.getVMoy() + SEPARATEUR_CSV_SORTIE);
+					builder.append(zone.getIdZone() + SEPARATEUR_CSV_SORTIE);
+					builder.append("\n");
+				}
+			}
+			
+			writer.write(builder.toString());
+		}catch (FileNotFoundException e) {
+		      System.out.println(e.getMessage());
+	    }finally{
+	    	writer.close();
+	    }
 	}
 
 }

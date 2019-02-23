@@ -30,6 +30,10 @@ public class Zone implements RobotListener{
 		return this.robots.size();
 	}
 	
+	public int getIdZone() {
+		return idZone;
+	}
+	
 	public ArrayList<Robot> getRobots() {
 		return robots;
 	}
