@@ -131,7 +131,8 @@ public class Zone implements RobotListener{
 	}
 	
 	/*
-	 * Affectation des robots de façon séquentiel.  
+	 * Affectation des robots de façon séquentiel.
+	 * Basé sur l'ordre de la liste de robot, on affecte un robot à chaque zone.  
 	 */
 	public static void affectionSequentielle(LinkedList<Zone> zones, LinkedList<Robot> robots){
 		Logger.getGlobal().log(Level.INFO, "Démarrage affectation séquentielle.");
@@ -150,10 +151,14 @@ public class Zone implements RobotListener{
 	
 	/*
 	 * La première affectation est faite de façon séquentiel.
-	 *  Ensuite on compare une zone aléatoire avec un autre. On test le résultat de l'écart type si on remplace un robot par un autre.
-	 *  Si le résultat est meilleur alors on applique le remplacement.
+	 * Ensuite on compare une zone avec une autre aléatoirement.
+	 * On test le résultat de l'écart type si on remplace un robot par un autre.
+	 * Si le résultat est meilleur alors on applique le remplacement.
 	 *  
-	 *  Si on atteint un minimum local on fait un échange aléatoire.
+	 * Si on atteint un minimum local on fait un échange aléatoire et on recommence ensuite la permutation décrite ci-dessus.
+	 * 
+	 * On arrête la permutation au bout d'un temps "tempsMaxSeconde"
+	 * 
 	 */
 	public static void affectationPermutation(double ecartTypeCible, int tempsMaxSeconde, LinkedList<Robot> robots, LinkedList<Zone> zones){
 		Logger.getGlobal().log(Level.INFO, "Démarrage affectation permutation.");
