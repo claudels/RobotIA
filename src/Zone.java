@@ -16,6 +16,10 @@ public class Zone implements RobotListener{
 		this.robots = new LinkedList<Robot>();
 	}
 
+	/*
+	 * @see RobotListener#zoneChanged(Robot)
+	 * Affecter un changement de zone à un robot en le retirant de son ancienne zone et en l'ajoutant à sa nouvelle zone.
+	 */
 	@Override
 	public void zoneChanged(Robot robot) {
 		if(robots.contains(robot) && robot.getAffectedZone() != this)
@@ -24,26 +28,46 @@ public class Zone implements RobotListener{
 			this.robots.add(robot);
 	}
 	
+	/*
+	 * Récupération de la somme des vitesse moyennes des robots par zone
+	 */
 	public double getVmoySum(){
 		return this.robots.parallelStream().mapToDouble(robot -> robot.getVMoy()).sum();
 	}
 	
+	/*
+	 * Moyenne des vitesses moyennes des robots par zones.
+	 */
 	public double getMoyenneVitesses(){
 		return this.getVmoySum() / (double)(this.robots.size());
 	}
 	
+	/*
+	 * Récupération du nombres de robots par zone.
+	 */
 	public int countRobots(){
 		return this.robots.size();
 	}
 	
+	/*
+	 * Récupération de l'identifiant de zone
+	 */
 	public int getIdZone() {
 		return idZone;
 	}
 	
+	/*
+	 * Liste des robots associés à une zone
+	 */
 	public LinkedList<Robot> getRobots() {
 		return robots;
 	}
 	
+	/*
+	 * Permutation aléatoire de robots entre zones. Cette fonction est appelé lorsque l'amélioration de l'écart type
+	 * est inférieur à un paramétre : "toleranceGainEcart"
+	 * 
+	 */
 	public static void doPermutationAleatoire(LinkedList<Zone> zones, int nombrePermutations, LinkedList<Robot> robots){
 		Random rand = new Random();
 		for(int i=0; i < nombrePermutations; i++){
@@ -61,6 +85,9 @@ public class Zone implements RobotListener{
 		}
 	}
 	
+	/*
+	 * Calcule de l'écart type des vitesse moyenne des zones 
+	 */
 	public static double calculerEcartType(LinkedList<Zone> zones){
 		double sum = 0.0, standardDeviation = 0.0;
         int length = zones.size();
@@ -91,6 +118,10 @@ public class Zone implements RobotListener{
 
 	}
 	
+	/*
+	 * Affectation des robots de façon séquentiel.
+	 * Basé sur l'ordre de la liste de robot, on affecte un robot à chaque zone.  
+	 */
 	public static void affectionSequentielle(LinkedList<Zone> zones, LinkedList<Robot> robots){
 		Logger.getGlobal().log(Level.INFO, "DÃ©marrage affectation sÃ©quentielle.");
 		
@@ -111,6 +142,17 @@ public class Zone implements RobotListener{
 
 	}
 	
+	/*
+	 * La première affectation est faite de façon séquentiel.
+	 * Ensuite on compare une zone avec une autre aléatoirement.
+	 * On test le résultat de l'écart type si on remplace un robot par un autre.
+	 * Si le résultat est meilleur alors on applique le remplacement.
+	 *  
+	 * Si on atteint un minimum local on fait un échange aléatoire et on recommence ensuite la permutation décrite ci-dessus.
+	 * 
+	 * On arrête la permutation au bout d'un temps "tempsMaxSeconde"
+	 * 
+	 */
 	public static void affectationPermutation(double ecartTypeCible, int tempsMaxSeconde, LinkedList<Robot> robots, LinkedList<Zone> zones){
 		Logger.getGlobal().log(Level.INFO, "DÃ©marrage affectation permutation.");
 		
@@ -177,3 +219,4 @@ public class Zone implements RobotListener{
 		
 	}
 }
+
