@@ -44,7 +44,7 @@ public class CSVManager {
 		return robots;
 	}
 	
-	public static void enregistrerRobots(String chemin, ArrayList<Zone> zones, double meilleurEcartType){
+	public static void enregistrerRobots(String chemin, LinkedList<Zone> zones, double meilleurEcartType){
 		StringBuilder builder = new StringBuilder();
 		PrintWriter writer = null;
 		

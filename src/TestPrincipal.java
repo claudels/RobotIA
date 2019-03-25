@@ -1,6 +1,7 @@
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -11,7 +12,7 @@ public class TestPrincipal {
 	@Test
 	public void TU_EcartType() {
 		//Création des zone
-		ArrayList<Zone> zones = new ArrayList<Zone>();
+		LinkedList<Zone> zones = new LinkedList<Zone>();
 		
 		for(int i=0; i<3; i++){
 			zones.add(new Zone(i));
