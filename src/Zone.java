@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Random;
@@ -46,22 +47,16 @@ public class Zone implements RobotListener{
 	public static void doPermutationAleatoire(LinkedList<Zone> zones, int nombrePermutations, LinkedList<Robot> robots){
 		Random rand = new Random();
 		for(int i=0; i < nombrePermutations; i++){
-			Comparator <Zone> comparatorZones = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
-			Zone zoneSource = zones.parallelStream().min(comparatorZones).get();
+			Comparator <Zone> comparator = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
+			Zone zoneSource = zones.parallelStream().min(comparator).get();
 			
-			int indexZoneSource = zones.parallelStream().filter(zone -> zone.idZone == zoneSource.idZone).map(zone -> zone.getIdZone()).findAny().orElse(-1);
+			int indexZoneSource = zones.indexOf(zoneSource);
 			int indexZoneDest = indexZoneSource;
-			while(indexZoneDest == indexZoneSource){  indexZoneDest = rand.nextInt(zones.size()); }
+			while(indexZoneDest == indexZoneSource){  indexZoneDest = rand.nextInt((zones.size())); }
 			
-			Zone zoneDest = zones.get(indexZoneDest);
-			
-			/*int indexRobotSource = rand.nextInt((robots.size() / zones.size()));
-			int indexRobotDest = indexRobotSource;
-			while(indexRobotDest == indexRobotSource){  indexRobotDest = rand.nextInt((robots.size() / zones.size())); }*/
-			Comparator <Robot> comparatorRobots = (r1, r2) -> Double.compare(r1.getVMoy(), r2.getVMoy());
-			Robot robotSource = zoneSource.getRobots().parallelStream().max(comparatorRobots).get();
-			Robot robotDest = zoneDest.getRobots().parallelStream().min(comparatorRobots).get();
-			
+			Comparator <Robot> comparatorRobot = (r1, r2) -> Double.compare(r1.getVMoy(), r2.getVMoy());
+			Robot robotSource = zoneSource.getRobots().parallelStream().max(comparatorRobot).get();
+			Robot robotDest = zones.get(indexZoneDest).getRobots().parallelStream().min(comparatorRobot).get();
 			robotSource.permute(robotDest);
 		}
 	}
@@ -84,7 +79,7 @@ public class Zone implements RobotListener{
 	}
 	
 	public static void affectationAleatoire(LinkedList<Zone> zones, LinkedList<Robot> robots){
-		Logger.getGlobal().log(Level.INFO, "Démarrage affectation aléatoire.");
+		Logger.getGlobal().log(Level.INFO, "DÃ©marrage affectation alÃ©atoire.");
 		Random rand = new Random();
 		
 		//Affectation aleatoire
@@ -92,36 +87,41 @@ public class Zone implements RobotListener{
 			robot.setAffectedZone(zones.get(rand.nextInt(zones.size())));
 		}
 		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Fin affectation aléatoire, dernier ecart : " + Zone.calculerEcartType(zones))); //Affichage ecart type
+		Logger.getGlobal().log(Level.INFO, String.valueOf("Fin affectation alÃ©atoire, dernier ecart : " + Zone.calculerEcartType(zones))); //Affichage ecart type
 
 	}
 	
 	public static void affectionSequentielle(LinkedList<Zone> zones, LinkedList<Robot> robots){
-		Logger.getGlobal().log(Level.INFO, "Démarrage affectation séquentielle.");
+		Logger.getGlobal().log(Level.INFO, "DÃ©marrage affectation sÃ©quentielle.");
 		
-		//Affection séquentielle
+		//Affection sÃ©quentielle
 		int curseur = 0;
+		
+		//Triage des robots par vitesse moyenne decroissante
+		Comparator <Robot> comparatorRobot = (r1, r2) -> Double.compare(r1.getVMoy(), r2.getVMoy());
+		robots.sort(comparatorRobot);
+		Collections.reverse(robots);
 		
 		for(Robot robot : robots){
 			robot.setAffectedZone(zones.get(curseur));
 			curseur = (curseur == zones.size()-1) ? 0 : curseur + 1;
 		}
 		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Fin affectation séquentielle, dernier ecart : " + Zone.calculerEcartType(zones))); //Affichage ecart type
+		Logger.getGlobal().log(Level.INFO, String.valueOf("Fin affectation sÃ©quentielle, dernier ecart : " + Zone.calculerEcartType(zones))); //Affichage ecart type
 
 	}
 	
 	public static void affectationPermutation(double ecartTypeCible, int tempsMaxSeconde, LinkedList<Robot> robots, LinkedList<Zone> zones){
-		Logger.getGlobal().log(Level.INFO, "Démarrage affectation permutation.");
+		Logger.getGlobal().log(Level.INFO, "DÃ©marrage affectation permutation.");
 		
 		//REGLAGES ALGO
 		final double toleranceGainEcart = 0.1;
-		final int nombrePermutationAleatoire = 12;
+		final int nombrePermutationAleatoire = 1;
 		
 		//Temps en MS
 		int tempsMaxMS = tempsMaxSeconde*1000;
 		
-		//Affection séquentielle
+		//Affection sÃ©quentielle
 		Zone.affectionSequentielle(zones, robots);
 		
 		long startTime = System.currentTimeMillis();
@@ -135,11 +135,14 @@ public class Zone implements RobotListener{
 			Zone zoneSuivante = zones.parallelStream().max(comparator).get();
 			
 			double pourcentageAmeliorationEcartType = 1 - (Zone.calculerEcartType(zones) / ecartTypeAvantPermut);
-			Logger.getGlobal().log(Level.INFO,"Pourcentage amelioration : " + pourcentageAmeliorationEcartType);
-			//Si on ne gagne l'écart type ne baisse plus suffisamment, on ajoute de l'aléatoire en faisant des permutations aléatoires
+			
+			//Si on ne gagne l'Ã©cart type ne baisse plus suffisamment, on ajoute de l'alÃ©atoire en faisant des permutations alÃ©atoires
 			if(pourcentageAmeliorationEcartType < toleranceGainEcart){
 				Zone.doPermutationAleatoire(zones, nombrePermutationAleatoire, robots);
 				permutationsCount+=nombrePermutationAleatoire;
+				int indexZoneSource = zones.indexOf(zoneSuivante);
+				int indexZoneDest = indexZoneSource;
+				while(indexZoneDest == indexZoneSource){  indexZoneDest = (new Random()).nextInt((zones.size())); }
 			}
 			
 			ecartTypeAvantPermut = Zone.calculerEcartType(zones);
@@ -170,7 +173,7 @@ public class Zone implements RobotListener{
 			}
 		}
 		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Fin affectation par permutation, dernier ecart : " + Zone.calculerEcartType(zones)) + " Meilleur ecart : " + bestEcartType + " Permutations : " + permutationsCount + " Temps passé : " + (double)(System.currentTimeMillis() - startTime)/(double)1000 + " secondes"); //Affichage ecart type
+		Logger.getGlobal().log(Level.INFO, String.valueOf("Fin affectation par permutation, dernier ecart : " + Zone.calculerEcartType(zones)) + " Meilleur ecart : " + bestEcartType + " Permutations : " + permutationsCount + " Temps passÃ© : " + (double)(System.currentTimeMillis() - startTime)/(double)1000 + " secondes"); //Affichage ecart type
 		
 	}
 }
