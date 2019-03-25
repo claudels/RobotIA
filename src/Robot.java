@@ -20,8 +20,13 @@ public class Robot {
 		this.listeners = new ArrayList<RobotListener>();
 	}
 	
-	/*
-	 * constructeur du robot
+	
+	/**
+	 *  constructeur du robot
+	 * 
+	 * @param id identifiant du robot
+	 * @param vMoy vitese moyenne associé au robot
+	 * @param zone zone dans laquelle se trouve le robot
 	 */
 	public Robot(int id, double vMoy, Zone zone) {
 		this(id, vMoy);
@@ -35,7 +40,7 @@ public class Robot {
 		return id;
 	}
 	
-	/*
+	/**
 	 * retourne la zone dans laquelle se trouve le robot
 	 */
 	public Zone getAffectedZone() {
@@ -49,14 +54,14 @@ public class Robot {
 		return vMoy;
 	}
 	
-	/*
+	/**
 	 * écouteur du robot
 	 */
 	public void addRobotListener(RobotListener listener){
 		this.listeners.add(listener);
 	}
 	
-	/*
+	/**
 	 * Changement d'affectation de zone d'un robot
 	 */
 	public void setAffectedZone(Zone newZone) {
@@ -65,7 +70,7 @@ public class Robot {
 		this.listeners.forEach(robotListener -> robotListener.zoneChanged(this));
 	}
 	
-	/*
+	/**
 	 * permutation d'un robot avec un autre
 	 */
 	public void permute(Robot robot){
