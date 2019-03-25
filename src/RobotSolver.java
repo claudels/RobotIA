@@ -35,12 +35,14 @@ public class RobotSolver {
 			zones.add(new Zone(i));
 		}
 		
+		//Lancement du test unitaire du calcul de l'eacrt type
 		JUnitCore junit = new JUnitCore();
 		Result result = junit.run(TestPrincipal.class);
 		if (result.getFailureCount() > 0){
 			Logger.getGlobal().log(Level.SEVERE, "Le test de calcul de l'écart ne passe pas.");
 		}
 		
+		//Test des différentes méthodes de résolution
 		Zone.affectionSequentielle(zones, robots);
 		Zone.affectationAleatoire(zones, robots);
 		Zone.affectationPermutation(0.000001, 60, robots, zones);

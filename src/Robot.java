@@ -87,6 +87,9 @@ public class Robot {
 		this.permute(this.lastRobotPermuted);
 	}
 	
+	/**
+	 * Convertion du robot en string
+	 */
 	@Override
 	public String toString() {
 		return "ID : " + this.id + " VMOY : " + this.vMoy + "\n";

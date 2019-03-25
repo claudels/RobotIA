@@ -11,6 +11,11 @@ public class CSVManager {
 	
 	private final static String SEPARATEUR_CSV_SORTIE = ";";
 	
+	/**
+	 * Charge les robots depuis un fichier csv
+	 * @param cheminFichierCSV chemin du fichier
+	 * @return Liste des robots
+	 */
 	public static LinkedList<Robot> chargerRobot(String cheminFichierCSV){
 		LinkedList<Robot> robots = new LinkedList<Robot>();
 		
@@ -44,6 +49,12 @@ public class CSVManager {
 		return robots;
 	}
 	
+	/**
+	 * Enresgitre les robots et leurs zones affectées dans le fichier csv
+	 * @param chemin Chemin du fichier
+	 * @param zones Zones avec les robots
+	 * @param meilleurEcartType Ecart type trouvé
+	 */
 	public static void enregistrerRobots(String chemin, LinkedList<Zone> zones, double meilleurEcartType){
 		StringBuilder builder = new StringBuilder();
 		PrintWriter writer = null;
