@@ -82,8 +82,10 @@ public class Zone implements RobotListener{
 			
 			//On permute le robot de la zone gauche ayant la plus grande vitesse avec celui qui a la plus petite vitesse dans la zone droite
 			Comparator <Robot> comparatorRobot = (r1, r2) -> Double.compare(r1.getVMoy(), r2.getVMoy());
+			/*Robot robotSource = zoneSource.getRobots().parallelStream().max(comparatorRobot).get();
+			Robot robotDest = zones.get(indexZoneDest).getRobots().parallelStream().min(comparatorRobot).get();*/
 			Robot robotSource = zoneSource.getRobots().parallelStream().max(comparatorRobot).get();
-			Robot robotDest = zones.get(indexZoneDest).getRobots().parallelStream().min(comparatorRobot).get();
+			Robot robotDest = zones.get(indexZoneDest).getRobots().get(rand.nextInt(robots.size()/zones.size()));
 			robotSource.permute(robotDest);
 		}
 	}
@@ -163,7 +165,7 @@ public class Zone implements RobotListener{
 		
 		//REGLAGES ALGO
 		final double toleranceGainEcart = 0.05;
-		final int nombrePermutationAleatoire = 1;
+		final int nombrePermutationAleatoire = 2;
 		
 		//Temps en MS
 		int tempsMaxMS = tempsMaxSeconde*1000;
