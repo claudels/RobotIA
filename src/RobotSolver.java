@@ -43,7 +43,7 @@ public class RobotSolver {
 		
 		Zone.affectionSequentielle(zones, robots);
 		Zone.affectationAleatoire(zones, robots);
-		Zone.affectationPermutation(0.000001, 40, robots, zones);
+		Zone.affectationPermutation(0.000001, 20, robots, zones);
 		
 	}
 

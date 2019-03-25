@@ -24,7 +24,7 @@ public class Zone implements RobotListener{
 	}
 	
 	public double getVmoySum(){
-		return this.robots.stream().mapToDouble(robot -> robot.getVMoy()).sum();
+		return this.robots.parallelStream().mapToDouble(robot -> robot.getVMoy()).sum();
 	}
 	
 	public double getMoyenneVitesses(){
@@ -46,19 +46,23 @@ public class Zone implements RobotListener{
 	public static void doPermutationAleatoire(LinkedList<Zone> zones, int nombrePermutations, LinkedList<Robot> robots){
 		Random rand = new Random();
 		for(int i=0; i < nombrePermutations; i++){
-			int indexZoneSource = rand.nextInt(zones.size());
+			Comparator <Zone> comparatorZones = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
+			Zone zoneSource = zones.parallelStream().min(comparatorZones).get();
+			
+			int indexZoneSource = zones.parallelStream().filter(zone -> zone.idZone == zoneSource.idZone).map(zone -> zone.getIdZone()).findAny().orElse(-1);
 			int indexZoneDest = indexZoneSource;
 			while(indexZoneDest == indexZoneSource){  indexZoneDest = rand.nextInt(zones.size()); }
 			
-			int indexRobotSource = rand.nextInt((robots.size() / zones.size()));
-			int indexRobotDest = indexRobotSource;
-			while(indexRobotDest == indexRobotSource){  indexRobotDest = rand.nextInt((robots.size() / zones.size())); }
-			
-			Comparator <Zone> comparator = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
-			Zone zoneSource = zones.stream().min(comparator).get();
 			Zone zoneDest = zones.get(indexZoneDest);
-
-			zoneSource.getRobots().get(indexRobotSource).permute(zoneDest.getRobots().get(indexRobotDest));
+			
+			/*int indexRobotSource = rand.nextInt((robots.size() / zones.size()));
+			int indexRobotDest = indexRobotSource;
+			while(indexRobotDest == indexRobotSource){  indexRobotDest = rand.nextInt((robots.size() / zones.size())); }*/
+			Comparator <Robot> comparatorRobots = (r1, r2) -> Double.compare(r1.getVMoy(), r2.getVMoy());
+			Robot robotSource = zoneSource.getRobots().parallelStream().max(comparatorRobots).get();
+			Robot robotDest = zoneDest.getRobots().parallelStream().min(comparatorRobots).get();
+			
+			robotSource.permute(robotDest);
 		}
 	}
 	
@@ -110,6 +114,12 @@ public class Zone implements RobotListener{
 	public static void affectationPermutation(double ecartTypeCible, int tempsMaxSeconde, LinkedList<Robot> robots, LinkedList<Zone> zones){
 		Logger.getGlobal().log(Level.INFO, "Démarrage affectation permutation.");
 		
+		//REGLAGES ALGO
+		final double toleranceGainEcart = 0.1;
+		final int nombrePermutationAleatoire = 12;
+		
+		//Temps en MS
+		int tempsMaxMS = tempsMaxSeconde*1000;
 		
 		//Affection séquentielle
 		Zone.affectionSequentielle(zones, robots);
@@ -117,17 +127,15 @@ public class Zone implements RobotListener{
 		long startTime = System.currentTimeMillis();
 		long permutationsCount = 0;
 		double ecartTypeAvantPermut = -1;
-		final double toleranceGainEcart = 0.2;
-		final int nombrePermutationAleatoire = 8;
 		double bestEcartType = 10;
 		
 		Comparator <Zone> comparator = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
-		while(Zone.calculerEcartType(zones) > ecartTypeCible && ((double)(System.currentTimeMillis() - startTime)/(double)1000) < (double)tempsMaxSeconde){
-			Zone zoneActuelle = zones.stream().min(comparator).get();
-			Zone zoneSuivante = zones.stream().max(comparator).get();
+		while(Zone.calculerEcartType(zones) > ecartTypeCible && ((System.currentTimeMillis() - startTime) < tempsMaxMS)){
+			Zone zoneActuelle = zones.parallelStream().min(comparator).get();
+			Zone zoneSuivante = zones.parallelStream().max(comparator).get();
 			
 			double pourcentageAmeliorationEcartType = 1 - (Zone.calculerEcartType(zones) / ecartTypeAvantPermut);
-			
+			Logger.getGlobal().log(Level.INFO,"Pourcentage amelioration : " + pourcentageAmeliorationEcartType);
 			//Si on ne gagne l'écart type ne baisse plus suffisamment, on ajoute de l'aléatoire en faisant des permutations aléatoires
 			if(pourcentageAmeliorationEcartType < toleranceGainEcart){
 				Zone.doPermutationAleatoire(zones, nombrePermutationAleatoire, robots);
@@ -155,8 +163,9 @@ public class Zone implements RobotListener{
 				}
 			}
 			
-			if(Zone.calculerEcartType(zones) < bestEcartType){
-				bestEcartType = Zone.calculerEcartType(zones);
+			double currentEcartType = Zone.calculerEcartType(zones);
+			if(currentEcartType < bestEcartType){
+				bestEcartType = currentEcartType;
 				CSVManager.enregistrerRobots(RobotSolver.CHEMIN_FICHIER_SORTIE, zones, bestEcartType);
 			}
 		}
