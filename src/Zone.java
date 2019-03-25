@@ -1,4 +1,8 @@
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Zone implements RobotListener{
 	private int idZone;
@@ -36,5 +40,44 @@ public class Zone implements RobotListener{
 	
 	public ArrayList<Robot> getRobots() {
 		return robots;
+	}
+	
+	public static double calculerEcartType(ArrayList<Zone> zones){
+		double sum = 0.0, standardDeviation = 0.0;
+        int length = zones.size();
+		
+		for(Zone zone : zones){
+			sum += zone.getMoyenneVitesses();
+		}
+		
+		double mean = sum/(double)length;
+		
+		for(Zone zone: zones) {
+            standardDeviation += Math.pow(zone.getMoyenneVitesses() - mean, 2);
+        }
+
+        return Math.sqrt(standardDeviation/(double)length);
+	}
+	
+	public static void affectationAleatoire(ArrayList<Zone> zones, ArrayList<Robot> robots){
+		Random rand = new Random();
+		
+		//Affectation aleatoire
+		for(Robot robot : robots){
+			robot.setAffectedZone(zones.get(rand.nextInt(zones.size())));
+		}
+		
+	}
+	
+	public static void affectionSequentielle(LinkedList<Zone> zones, LinkedList<Robot> robots){
+		
+		//Affection séquentielle
+		int curseur = 0;
+		
+		for(Robot robot : robots){
+			robot.setAffectedZone(zones.get(curseur));
+			curseur = (curseur == zones.size()-1) ? 0 : curseur + 1;
+		}
+		
 	}
 }

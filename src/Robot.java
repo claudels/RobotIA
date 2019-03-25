@@ -9,6 +9,8 @@ public class Robot {
 	
 	private ArrayList<RobotListener> listeners;
 	
+	private Robot lastRobotPermuted;
+	
 	public Robot(int id, double vMoy) {
 		this.id = id;
 		this.vMoy = vMoy;
@@ -40,6 +42,17 @@ public class Robot {
 		this.affectedZone = newZone;
 		this.addRobotListener(newZone);
 		this.listeners.forEach(robotListener -> robotListener.zoneChanged(this));
+	}
+	
+	public void permute(Robot robot){
+		this.lastRobotPermuted = robot;
+		Zone lastZone = robot.getAffectedZone();
+		robot.setAffectedZone(this.getAffectedZone());
+		this.setAffectedZone(lastZone);
+	}
+	
+	public void cancelPermute(){
+		this.permute(this.lastRobotPermuted);
 	}
 	
 	@Override

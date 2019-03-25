@@ -14,57 +14,32 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
+
 public class RobotSolver {
 	
 	private final static String CHEMIN_FICHIER_ROBOTS = "res/initial.csv";
 	private final static int NOMBRE_ZONES = 6;
-	private final static String SEPARATEUR_CSV_SORTIE = ";";
+	
 	private final static String CHEMIN_FICHIER_SORTIE = "res/complet.csv";
 
 	public static void main(String[] args) {
 		//Table des robots avec id comme clé
-		LinkedList<Robot> robots = chargementRobot(CHEMIN_FICHIER_ROBOTS);
+		LinkedList<Robot> robots = CSVManager.chargerRobot(CHEMIN_FICHIER_ROBOTS);
 		
-		TU_calculEcartType();
-		
-		affectionSequentielle(robots);
-		affectationAleatoire(robots);
-		affectationPermutation(0.00001, 10, robots);
-		
-		
-		//Affichage des robots
-		//Logger.getGlobal().log(Level.INFO, robots.toString());
-	}
-	
-	public static void TU_calculEcartType(){
-		//Création des zone
-		ArrayList<Zone> zones = new ArrayList<Zone>();
-		
-		for(int i=0; i<3; i++){
-			zones.add(new Zone(i));
+		JUnitCore junit = new JUnitCore();
+		Result result = junit.run(TestPrincipal.class);
+		if (result.getFailureCount() > 0){
+			Logger.getGlobal().log(Level.SEVERE, "Le test de calcul de l'écart ne passe pas.");
 		}
 		
-		//Robot zone 1
-		Robot robot01 = new Robot(1, 0);
-		Robot robot2 = new Robot(2, 2);
-		robot01.setAffectedZone(zones.get(0));
-		robot2.setAffectedZone(zones.get(0));
+		/*affectionSequentielle(robots);
+		affectationAleatoire(robots);
+		affectationPermutation(0.000001, 20, robots);*/
 		
-		//Robot zone 2
-		Robot robot02 = new Robot(1, 0);
-		Robot robot4 = new Robot(2, 4);
-		robot02.setAffectedZone(zones.get(1));
-		robot4.setAffectedZone(zones.get(1));
-		
-		//Robot zone 3
-		Robot robot03 = new Robot(1, 0);
-		Robot robot6 = new Robot(2, 6);
-		robot03.setAffectedZone(zones.get(2));
-		robot6.setAffectedZone(zones.get(2));
-		
-		Logger.getGlobal().log(Level.INFO, "Test calcul ecart type, attendu E = 0,816497, Reel E = " + calculateEcartTypeZones(zones));
 	}
-	
+
 	public static void affectationPermutation(double ecartTypeCible, int tempsMaxSeconde, LinkedList<Robot> robots){
 		//Création des zone
 		ArrayList<Zone> zones = new ArrayList<Zone>();
@@ -81,50 +56,23 @@ public class RobotSolver {
 			curseur = (curseur == NOMBRE_ZONES-1) ? 0 : curseur + 1;
 		}
 		
-		/**Collections.sort(robots, Comparator.comparingDouble(Robot::getVMoy).reversed());
-		int flag=1;
-		int curseur=0;
-		for(Robot robot : robots){
-			robot.setAffectedZone(zones.get(curseur));
-			
-		if (flag==1) {
-			if (curseur == NOMBRE_ZONES-1) {
-				flag=0;
-			}
-			curseur+=1;
-		}	
-		if (flag==0) {
-			if (curseur == 1) {
-				flag=1;
-			}
-			curseur-=1;
-		}
-		}*/
-		
 		long startTime = System.currentTimeMillis();
 		long permutationsCount = 0;
 		double ecartTypeAvantPermut = -1;
-		double toleranceGainEcart = 0.01;
+		double toleranceGainEcart = 0.1;
 		double nombrePermutationAleatoire = 8;
 		double bestEcartType = 10;
-		int counterForcePermute = 0;
-		int nombreIterationAvantForcePermute = 10;
 		
 		Comparator <Zone> comparator = (z1, z2) -> Double.compare(z1.getMoyenneVitesses(), z2.getMoyenneVitesses());
 		Random rand = new Random();
-		//Permutation
-		while(calculateEcartTypeZones(zones) > ecartTypeCible && ((double)(System.currentTimeMillis() - startTime)/(double)1000) < (double)tempsMaxSeconde){
+		while(Zone.calculerEcartType(zones) > ecartTypeCible && ((double)(System.currentTimeMillis() - startTime)/(double)1000) < (double)tempsMaxSeconde){
 			Zone zoneActuelle = zones.stream().min(comparator).get();
 			Zone zoneSuivante = zones.stream().max(comparator).get();
 			
-			counterForcePermute = (counterForcePermute == 0) ? 0 : counterForcePermute - 1;
+			double pourcentageAmeliorationEcartType = 1 - (Zone.calculerEcartType(zones) / ecartTypeAvantPermut);
 			
-			double pourcentageAmeliorationEcartType = 1 - (calculateEcartTypeZones(zones) / ecartTypeAvantPermut);
-			Logger.getGlobal().log(Level.INFO, "Pourcentage amélioriation : " + pourcentageAmeliorationEcartType);
-			
-			if(pourcentageAmeliorationEcartType < toleranceGainEcart && counterForcePermute == 0){
+			if(pourcentageAmeliorationEcartType < toleranceGainEcart){
 				//Reinitialise le compteur avant qui temporise les iteration avant de repermuter
-				counterForcePermute = nombreIterationAvantForcePermute;
 				for(int i=0; i < nombrePermutationAleatoire; i++){
 					int indexZoneSource = rand.nextInt(NOMBRE_ZONES);
 					int indexZoneDest = indexZoneSource;
@@ -134,187 +82,48 @@ public class RobotSolver {
 					int indexRobotDest = indexRobotSource;
 					while(indexRobotDest == indexRobotSource){  indexRobotDest = rand.nextInt((robots.size() / zones.size())); }
 					
-					//Zone zoneSource = zones.get(indexZoneSource);
 					Zone zoneSource = zoneActuelle;
 					Zone zoneDest = zones.get(indexZoneDest);
 					
-					zoneSource.getRobots().get(indexRobotSource).setAffectedZone(zoneDest);
-					zoneDest.getRobots().get(indexRobotDest).setAffectedZone(zoneSource);
+					/*zoneSource.getRobots().get(indexRobotSource).setAffectedZone(zoneDest);
+					zoneDest.getRobots().get(indexRobotDest).setAffectedZone(zoneSource);*/
+					zoneSource.getRobots().get(indexRobotSource).permute(zoneDest.getRobots().get(indexRobotDest));
 					permutationsCount++;
 				}
 			}
-			else if(pourcentageAmeliorationEcartType < toleranceGainEcart && counterForcePermute > 0){
+			else if(pourcentageAmeliorationEcartType < toleranceGainEcart){
 				zoneSuivante = zones.get(rand.nextInt(NOMBRE_ZONES));
 			}
 			
 			
-			ecartTypeAvantPermut = calculateEcartTypeZones(zones);
+			ecartTypeAvantPermut = Zone.calculerEcartType(zones);
 			
 			for(int i = 0; i < zoneActuelle.getRobots().size(); i++){
-				double ancienEcartType = calculateEcartTypeZones(zones);
-				
-				/*double bestTempEcartType = ancienEcartType;
-				final Robot bestRobotToSwitchId[] = new Robot[1];
-				bestRobotToSwitchId[0] = null;*/
+				double ancienEcartType = Zone.calculerEcartType(zones);
+				Robot currentRobotZoneActuelle = zoneActuelle.getRobots().get(i);
 				
 				for(int j = 0; j < zoneSuivante.getRobots().size(); j++){
-					/*zoneActuelle.getRobots().get(i).setAffectedZone(zoneSuivante);
-					zoneSuivante.getRobots().get(j).setAffectedZone(zoneActuelle);
+					Robot currentRobotZoneSuivante = zoneSuivante.getRobots().get(j);
 					
-					double nouvelEcartType = calculateEcartTypeZones(zones);
-					if(nouvelEcartType < bestTempEcartType && nouvelEcartType < ancienEcartType){
-						bestEcartType = calculateEcartTypeZones(zones);
-						bestRobotToSwitchId[0] = zoneSuivante.getRobots().get(zoneSuivante.countRobots() - 2);
-					}
+					currentRobotZoneActuelle.permute(currentRobotZoneSuivante);
 					
-					zoneActuelle.getRobots().get(zoneActuelle.countRobots() - 1).setAffectedZone(zoneSuivante);
-					zoneSuivante.getRobots().get(zoneSuivante.countRobots() - 2).setAffectedZone(zoneActuelle);*/
-					zoneActuelle.getRobots().get(i).setAffectedZone(zoneSuivante);
-					zoneSuivante.getRobots().get(j).setAffectedZone(zoneActuelle);
-					
-					double nouvelEcartType = calculateEcartTypeZones(zones);
+					double nouvelEcartType = Zone.calculerEcartType(zones);
 					if(nouvelEcartType > ancienEcartType){
-						zoneActuelle.getRobots().get(zoneActuelle.countRobots() - 1).setAffectedZone(zoneSuivante);
-						zoneSuivante.getRobots().get(zoneSuivante.countRobots() - 2).setAffectedZone(zoneActuelle);
+						currentRobotZoneActuelle.cancelPermute();
 					}else{
 						permutationsCount++;
 						break;
 					}
 				}
-				
-				/*if(bestRobotToSwitchId[0] != null){
-					zoneActuelle.getRobots().get(i).setAffectedZone(zoneSuivante);
-					/*int indexRobot = zoneSuivante.getRobots().indexOf(bestRobotToSwitchId[0]);
-					zoneSuivante.getRobots().get(indexRobot).setAffectedZone(zoneActuelle);
-					bestRobotToSwitchId[0].setAffectedZone(zoneActuelle);
-					permutationsCount++;
-				}*/
 			}
 			
-			if(calculateEcartTypeZones(zones) < bestEcartType){
-				bestEcartType = calculateEcartTypeZones(zones);
-				enregistrerRobots(CHEMIN_FICHIER_SORTIE, zones);
+			if(Zone.calculerEcartType(zones) < bestEcartType){
+				bestEcartType = Zone.calculerEcartType(zones);
+				CSVManager.enregistrerRobots(CHEMIN_FICHIER_SORTIE, zones, bestEcartType);
 			}
 		}
 		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Affectation par permutation, dernier ecart : " + calculateEcartTypeZones(zones)) + " Meilleur ecart : " + bestEcartType + " Permutations : " + permutationsCount + " Temps passé : " + (double)(System.currentTimeMillis() - startTime)/(double)1000 + " secondes"); //Affichage ecart type
+		Logger.getGlobal().log(Level.INFO, String.valueOf("Affectation par permutation, dernier ecart : " + Zone.calculerEcartType(zones)) + " Meilleur ecart : " + bestEcartType + " Permutations : " + permutationsCount + " Temps passé : " + (double)(System.currentTimeMillis() - startTime)/(double)1000 + " secondes"); //Affichage ecart type
 
 	}
-	
-	public static void affectationAleatoire(LinkedList<Robot> robots){
-		//Création des zone
-		ArrayList<Zone> zones = new ArrayList<Zone>();
-		
-		for(int i=0; i<NOMBRE_ZONES; i++){
-			zones.add(new Zone(i));
-		}
-		
-		Random rand = new Random();
-		
-		//Affectation aleatoire
-		for(Robot robot : robots){
-			robot.setAffectedZone(zones.get(rand.nextInt(NOMBRE_ZONES)));
-		}
-		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Affectation aléatoire : " + calculateEcartTypeZones(zones))); //Affichage ecart type
 	}
-	
-	
-	public static void affectionSequentielle(LinkedList<Robot> robots){
-		//Création des zone
-		ArrayList<Zone> zones = new ArrayList<Zone>();
-		
-		for(int i=0; i<NOMBRE_ZONES; i++){
-			zones.add(new Zone(i));
-		}
-		
-		//Affection séquentielle
-		int curseur = 0;
-		
-		for(Robot robot : robots){
-			robot.setAffectedZone(zones.get(curseur));
-			curseur = (curseur == NOMBRE_ZONES-1) ? 0 : curseur + 1;
-		}
-		
-		Logger.getGlobal().log(Level.INFO, String.valueOf("Affectation séquentielle : " + calculateEcartTypeZones(zones))); //Affichage ecart type
-	}
-	
-	public static double calculateEcartTypeZones(ArrayList<Zone> zones){
-		
-		double sum = 0.0, standardDeviation = 0.0;
-        int length = zones.size();
-		
-		for(Zone zone : zones){
-			sum += zone.getMoyenneVitesses();
-		}
-		
-		double mean = sum/(double)length;
-		
-		for(Zone zone: zones) {
-            standardDeviation += Math.pow(zone.getMoyenneVitesses() - mean, 2);
-        }
-
-        return Math.sqrt(standardDeviation/(double)length);
-	}
-	
-	public static LinkedList<Robot> chargementRobot(String cheminFichierCSV){
-		LinkedList<Robot> robots = new LinkedList<Robot>();
-		
-		BufferedReader br = null;
-        String ligne = "";
-        String splitter = ",";
-		
-		try{
-			br = new BufferedReader(new FileReader(cheminFichierCSV));
-			
-			//Lecture de la première ligne
-			br.readLine();
-			while ((ligne = br.readLine()) != null) {
-				Robot newRobot = new Robot(Integer.valueOf(ligne.split(splitter)[0]), Double.valueOf(ligne.split(splitter)[1]));
-				robots.add(newRobot);
-			}
-		}catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-		
-		return robots;
-	}
-	
-	public static void enregistrerRobots(String chemin, ArrayList<Zone> zones){
-		StringBuilder builder = new StringBuilder();
-		PrintWriter writer = null;
-		
-		try{
-			writer = new PrintWriter(new File(chemin));
-			
-			builder.append("ECART TYPE" + SEPARATEUR_CSV_SORTIE + calculateEcartTypeZones(zones) + SEPARATEUR_CSV_SORTIE + "\n");
-			builder.append("ID" + SEPARATEUR_CSV_SORTIE + "Vitesse" + SEPARATEUR_CSV_SORTIE + "Zone affectée" + SEPARATEUR_CSV_SORTIE + "\n");
-			
-			for (Zone zone : zones){
-				for (Robot robot : zone.getRobots()){
-					builder.append(robot.getId() + SEPARATEUR_CSV_SORTIE);
-					builder.append(robot.getVMoy() + SEPARATEUR_CSV_SORTIE);
-					builder.append(zone.getIdZone() + SEPARATEUR_CSV_SORTIE);
-					builder.append("\n");
-				}
-			}
-			
-			writer.write(builder.toString());
-		}catch (FileNotFoundException e) {
-		      System.out.println(e.getMessage());
-	    }finally{
-	    	writer.close();
-	    }
-	}
-
-}
