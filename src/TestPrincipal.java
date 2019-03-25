@@ -10,7 +10,7 @@ import org.junit.Test;
 public class TestPrincipal {
 
 	/*
-	 * Vérification de la fonction de calcule de l'acart type.
+	 * Vérification de la fonction de calcul de l'acart type.
 	 * Cette fonction permet de vérifier que la fonction de calcule d'acart type retourne le bon résultat.
 	 */
 	@Test
